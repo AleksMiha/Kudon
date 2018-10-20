@@ -14,7 +14,7 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 //mongoose.Promise = global.Promise;
 
-Employee.insertMany(
+/*Employee.insertMany(
     [
         {
             name: {
@@ -44,32 +44,57 @@ Employee.insertMany(
             active: true,
             spentKudosThisWeek: 1,
         },
-    ]).then(data => console.log(data));
+    ]).then(data => console.log(data));*/
 //Employee.deleteMany({slackUserId: 'kubicnimeter'}).then(data => console.log(data));
 
-function validateActivity(id) {
-    return Employee.findOne({slackUserId: id})
+function validateActivity(a_employeeId) {
+    return Employee.findById(a_employeeId)
         .then(data => {
-            if (data.active === true) {
-                return true;
-            } else {
-                return false;
-            }
-        }).catch(err => console.log(err))
+            return (data.active === true);
+        })
+        .catch(err => console.log(err))
 }
 
-function createTransaction(transaction) {
+function getWeight(a_employeeId) {
+    return Employee.findById(a_employeeId)
+        .populate('position')
+        .then(data => {
+            return (data.position.weight);
+        })
+        .catch(err => console.log(err))
+}
+
+function getEmployeeIdFromSlackId(a_slackId) {
+    return Employee.find({slackUserId: a_slackId})
+        .then(data => {
+            return (data._id);
+        })
+        .catch(err => console.log(err))
+}
+
+async function createTransaction(transaction) {
+    const fromEmployee = transaction.from;
+    const toEmployee = transaction.to;
     //person giving and person recieving kudos is not the same person => true
-    const differentPerson = !(transaction.from === transaction.to);
+    const differentPerson = !(fromEmployee === toEmployee);
 
     //ensure both reciever and giver of kudos are an active part of the company
-    const giverActivePerson = validateActivity(transaction.from);
-    const recieverActivePerson = validateActivity(transaction.to);
+    const giverActivePerson = await validateActivity(fromEmployee);
+    const recieverActivePerson = await validateActivity(toEmployee);
+    
+    //get weight ratio which is defined as position.weight of (from / to)
+    const weightRationFrom = await getWeight(fromEmployee);
+    const weightRationTo = await getWeight(toEmployee);
 
+    const weightRatio = weightRationFrom / weightRationTo;
+    console.log(giverActivePerson, recieverActivePerson, weightRatio);
 
 }
 
-
+createTransaction({
+    from: '5bcb331fb29ebf33ecc5c4ec',
+    to: '5bcb483f895e7e31b49641c0',
+});
 
 app.get('/callme', function(req, res){
     res.send({});

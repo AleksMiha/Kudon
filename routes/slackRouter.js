@@ -13,6 +13,9 @@ const CLIENT_ID = secrets.CLIENT_ID;
 const CLIENT_SECRET = secrets.CLIENT_SECRET;
 const BOT_TOKEN = secrets.BOT_TOKEN;
 
+const admin_aproval_MESSAGE = require('../messages/admin_aproval');
+const dialog_MESSAGE = require('../messages/dialog');
+
 
 const web = new WebClient(BOT_TOKEN);
 /* GET users listing. */
@@ -51,7 +54,7 @@ router.get('/oauth', function (req, res) {
 router.post('/event/kudos', (req, res, next) => {
   // res.send(req.body.challenge);
   if (req.body.event.type === "message") {
-    if (req.body.event.message.bot_id) {
+    if (req.body.event.message._id) {
       res.sendStatus(200);
     } else {
       if (req.body.event.text.includes("sup")) {
@@ -75,7 +78,7 @@ router.post('/event/kudos', (req, res, next) => {
 // });
 const dialog_url = "https://slack.com/api/dialog.open";
 const dialog = {
-  "callback_id": "accept",
+  "callback_id": "kudos_prompt",
   "title": "Send kudos",
   "submit_label": "Request",
   "elements": [{
@@ -86,9 +89,16 @@ const dialog = {
     },
     {
       "type": "text",
-      "label": "Dropoff Location",
-      "name": "loc_destination"
+      "label": "Amount of Kudos",
+      "name": "Amount"
+    },
+    {
+      "label": "Add comment",
+      "name": "comment",
+      "type": "textarea",
+      "hint": "Provide additional information if needed."
     }
+
   ]
 };
 
@@ -101,7 +111,7 @@ router.post('/commands/kudos', (req, res) => {
 
   // post dialog to dialog url
   axios.post(dialog_url, {
-    dialog,
+    dialog: dialog_MESSAGE,
     trigger_id: req.body.trigger_id
   }, {
     headers: {
@@ -176,15 +186,21 @@ router.post('/interactive/action', function (req, res) {
   //TODO: save to database
   if (payload.callback_id === "accept") {
     if (payload.actions[0].value === "yes") {
-
+      res.send("You nice person");
     }
     if (payload.actions[0].value === "no") {
-      res.send("you sucks")
-    }
-
+      res.send("you sucks");
+    } 
   }
-  // if (payload.actions[0])
-
+  if (payload.callback_id === "kudos_prompt") {
+    res.status(200).end();
+    const upperChannelId = null //TODO: get upper channel slack
+    web.chat.postMessage({
+      channel: payload.user.id,
+      ...admin_aproval_MESSAGE
+    })
+    .catch(console.error);
+  }
 });
 
 
