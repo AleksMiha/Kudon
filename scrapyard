@@ -1,0 +1,44 @@
+PositionModel.insertMany(
+    [
+        {
+            jobTitle: 'CEO',
+            weight: 10,
+            kudosLimit: 2
+        },
+        {
+            jobTitle: 'Department manger',
+            weight: 5,
+            kudosLimit: 4
+        },
+        {
+            jobTitle: 'Senior developer',
+            weight: 4,
+            kudosLimit: 5
+        },
+        {
+            jobTitle: 'Junior developer',
+            weight: 2,
+            kudosLimit: 10
+        },
+        {
+            jobTitle: 'Intern',
+            weight: 1,
+            kudosLimit: 20
+        },
+    ]).then(data => console.log(data));
+
+CEO:
+{
+    name: {
+        first: 'Miha',
+        last: 'Kovač'
+    },
+    slackUserId: 'sinusdevetdeset',
+    position: '5bcb2d2bc761be3e848bfb6f',
+
+    email: 'miha@mail.com',
+    avatarUrl: '/public/images/miha.jpg',
+    department: 'Marketing',
+    active: true,
+    spentKudosThisWeek: 0,
+}

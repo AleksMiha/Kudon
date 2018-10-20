@@ -1,11 +1,4 @@
 const mongoose = require('mongoose');
-const mongoDB = 'someUrl';
-
-
-//Connect to db
-mongoose.connect(mongoDB, {
-    useNewUrlParser: true
-});
 
 //Schema
 const positionSchema = new mongoose.Schema({

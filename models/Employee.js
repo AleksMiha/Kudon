@@ -1,11 +1,5 @@
 const mongoose = require('mongoose');
-const mongoDB = 'lorem ipsum dolor sit amet';
 const Schema = mongoose.Schema;
-
-//Connect to db
-mongoose.connect(mongoDB, {
-    useNewUrlParser: true
-});
 
 //Schema
 const employeeSchema = new mongoose.Schema({
@@ -33,5 +27,6 @@ const employeeSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
 
 module.exports = mongoose.model('Employee', employeeSchema);

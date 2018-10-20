@@ -24,21 +24,6 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/slack', slackRouter);
 
-app.post('/event/kudos', (req, res) => {
-  if (req.body.event.type === "message") {
-    if (req.body.event.text.includes("sup")) {
-      ts = req.body.event.ts;
-      console.log(req.body.event);
-      const conversationId = req.body.event.channel;
-      res.sendStatus(200);
-      web.chat.postMessage({
-          channel: conversationId,
-          text: `You just said something`
-        })
-        .catch(console.error);
-    }
-  }
-});
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
