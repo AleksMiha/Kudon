@@ -4,7 +4,7 @@ module.exports = {
     "submit_label": "Request",
     "elements": [{
         "label": "Assignee",
-        "name": "bug_assignee",
+        "name": "toUser",
         "type": "select",
         "data_source": "users"
       },

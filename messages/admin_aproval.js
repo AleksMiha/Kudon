@@ -1,5 +1,5 @@
 module.exports = {
-    "text": "This is your first interactive message",
+    "text": "User {} wants to send kudos to {}, ",
     "attachments": [
         {
             "text": "Building buttons is easy right?",

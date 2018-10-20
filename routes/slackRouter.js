@@ -187,17 +187,53 @@ router.post('/interactive/action', function (req, res) {
   if (payload.callback_id === "accept") {
     if (payload.actions[0].value === "yes") {
       res.send("You nice person");
+      //change aproval database
     }
     if (payload.actions[0].value === "no") {
       res.send("you sucks");
+      //change aproval database to refused
     } 
   }
   if (payload.callback_id === "kudos_prompt") {
+    const fromUserId = payload.user.id;
+    const fromUserName = payload.user.name;
+    const toUserId = payload.submission.toUser;
+    const message = payload.submission.comment;
+    const amount = Number(payload.submission.Amount);
+    //add to database kudos sending
+    
+    // const toUserName  retrievaš iz baze
+    //TODO: 
+    //get trade_id and pass it to the admin_aproval
     res.status(200).end();
     const upperChannelId = null //TODO: get upper channel slack
     web.chat.postMessage({
       channel: payload.user.id,
-      ...admin_aproval_MESSAGE
+      // ...admin_aproval_MESSAGE
+      "text": `User ${fromUserName}, \n Wants to send: ${amount} Kudos, \n To: ${toUserId},\n He is saying that: ${message}`,
+      "attachments": [
+        {
+            "text": "Building buttons is easy right?",
+            "fallback": "Shame... buttons aren't supported in this land",
+            "callback_id": "accept",
+            "color": "#3AA3E3",
+            "attachment_type": "default",
+            "actions": [
+                {
+                    "name": "yes",
+                    "text": "yes",
+                    "type": "button",
+                    "value": "yes"
+                },
+                {
+                    "name": "no",
+                    "text": "no",
+                    "type": "button",
+                    "value": "no"
+                }
+            ]
+        }
+    ]   
     })
     .catch(console.error);
   }
