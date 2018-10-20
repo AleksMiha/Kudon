@@ -105,3 +105,66 @@ Senior devs
         spentKudosThisWeek: 2,
     },
 ]
+
+Junior devs:
+[
+    {
+        name: {
+            first: 'Ivo',
+            last: 'Bos'
+        },
+        slackUserId: 'kafje',
+        position: '5bcb2d2bc761be3e848bfb72',
+        managerId: '5bcb483f895e7e31b49641c0',
+        email: 'nejc@mail.com',
+        avatarUrl: '/public/images/nejc.jpg',
+        department: 'Backend',
+        active: true,
+        spentKudosThisWeek: 1,
+    },
+    {
+        name: {
+            first: 'Vili',
+            last: 'Resni'
+        },
+        slackUserId: 'pineappletea',
+        position: '5bcb2d2bc761be3e848bfb72',
+        managerId: '5bcb4840895e7e31b49641c1',
+        email: 'vili@mail.com',
+        avatarUrl: '/public/images/vasilij.jpg',
+        department: 'Frontend',
+        active: true,
+        spentKudosThisWeek: 2,
+    },
+]
+Intern:
+[
+        {
+            name: {
+                first: 'Vid',
+                last: 'Zelen'
+            },
+            slackUserId: 'zelenicaj',
+            position: '5bcb2d2bc761be3e848bfb73',
+            managerId: '5bcb483f895e7e31b49641c0',
+            email: 'vid@mail.com',
+            avatarUrl: '/public/images/vid.jpg',
+            department: 'Data science',
+            active: true,
+            spentKudosThisWeek: 4,
+        },
+        {
+            name: {
+                first: 'Aljaž',
+                last: 'Kres'
+            },
+            slackUserId: 'malopolje',
+            position: '5bcb2d2bc761be3e848bfb73',
+            managerId: '5bcb4840895e7e31b49641c1',
+            email: 'aljaz@mail.com',
+            avatarUrl: '/public/images/aljaz.jpg',
+            department: 'Frontend',
+            active: true,
+            spentKudosThisWeek: 1,
+        },
+    ]

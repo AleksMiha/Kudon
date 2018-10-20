@@ -1,10 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { WebClient } = require('@slack/client');
+const {
+  WebClient
+} = require('@slack/client');
 const secrets = require('../config/slack_secret');
 const bodyParser = require('body-parser')
-const urlencodedParser = bodyParser.urlencoded({ extended: false })
-
+const urlencodedParser = bodyParser.urlencoded({
+  extended: false
+})
+const axios = require('axios');
 const CLIENT_ID = secrets.CLIENT_ID;
 const CLIENT_SECRET = secrets.CLIENT_SECRET;
 const BOT_TOKEN = secrets.BOT_TOKEN;
@@ -50,111 +54,137 @@ router.post('/event/kudos', (req, res, next) => {
     if (req.body.event.message.bot_id) {
       res.sendStatus(200);
     } else {
-    if (req.body.event.text.includes("sup")) {
-      ts = req.body.event.ts;
-      console.log(req.body.event);
-      const conversationId = req.body.event.channel;
-      res.sendStatus(200);
-      web.chat.postMessage({
-          channel: conversationId,
-          text: `You just said something`
-        })
-        .catch(console.error);
+      if (req.body.event.text.includes("sup")) {
+        ts = req.body.event.ts;
+        console.log(req.body.event);
+        const conversationId = req.body.event.channel;
+        res.sendStatus(200);
+        web.chat.postMessage({
+            channel: conversationId,
+            text: `You just said something`
+          })
+          .catch(console.error);
+      }
     }
-  }
   }
 });
 
-router.post('/commands/kudos', function (req, res) {
-  const channel_id = req.body.channel;
-  res.json({
-    "text": "This is your first interactive message",
-    "attachments": [
-        {
-            "text": "Building buttons is easy right?",
-            "fallback": "Shame... buttons aren't supported in this land",
-            "callback_id": "button_tutorial",
-            "color": "#3AA3E3",
-            "attachment_type": "default",
-            "actions": [
-                {
-                    "name": "yes",
-                    "text": "yes",
-                    "type": "button",
-                    "value": "yes"
-                },
-                {
-                    "name": "no",
-                    "text": "no",
-                    "type": "button",
-                    "value": "no"
-                },
-                {
-                    "name": "maybe",
-                    "text": "maybe",
-                    "type": "button",
-                    "value": "maybe",
-                    "style": "danger"
-                }
-            ]
-        }
-    ]
-})
+// router.post('/commands/kudos', function (req, res) {
+//   const channel_id = req.body.channel;
+
+// });
+const dialog_url = "https://slack.com/api/dialog.open";
+const dialog = {
+  "callback_id": "accept",
+  "title": "Send kudos",
+  "submit_label": "Request",
+  "elements": [{
+      "label": "Assignee",
+      "name": "bug_assignee",
+      "type": "select",
+      "data_source": "users"
+    },
+    {
+      "type": "text",
+      "label": "Dropoff Location",
+      "name": "loc_destination"
+    }
+  ]
+};
+
+// handle the post triggered by slash command using node express
+router.post('/commands/kudos', (req, res) => {
+  console.log(req.body);
+
+  console.log('trigger id', req.body.trigger_id)
+  console.log('type of trigger id', typeof (req.body.trigger_id))
+
+  // post dialog to dialog url
+  axios.post(dialog_url, {
+    dialog,
+    trigger_id: req.body.trigger_id
+  }, {
+    headers: {
+      'Content-type': 'application/json',
+      'charset': 'UTF-8',
+      'Authorization': `Bearer ${BOT_TOKEN}`
+    }
+  }).then(res => {
+    console.log(res.data);
+  }).catch(err => console.log(err))
 });
+// res.json({
+//     "trigger_id": "13345224609.738474920.8088930838d88f008e0",
+//     "dialog": {
+//       "callback_id": "ryde-46e2b0",
+//       "title": "Request a Ride",
+//       "submit_label": "Request",
+//       "notify_on_cancel": true,
+//       "state": "Limo",
+//       "elements": [
+//           {
+//               "type": "text",
+//               "label": "Pickup Location",
+//               "name": "loc_origin"
+//           },
+//           {
+//               "type": "text",
+//               "label": "Dropoff Location",
+//               "name": "loc_destination"
+//           }
+//       ]
+//     }
+//   })
+// {
+//     "text": "This is your first interactive message",
+//     "attachments": [
+//         {
+//             "text": "Building buttons is easy right?",
+//             "fallback": "Shame... buttons aren't supported in this land",
+//             "callback_id": "accept",
+//             "color": "#3AA3E3",
+//             "attachment_type": "default",
+//             "actions": [
+//                 {
+//                     "name": "yes",
+//                     "text": "yes",
+//                     "type": "button",
+//                     "value": "yes"
+//                 },
+//                 {
+//                     "name": "no",
+//                     "text": "no",
+//                     "type": "button",
+//                     "value": "no"
+//                 }
+//             ]
+//         }
+//     ]
+// })
 
 router.post('/commands/leaderboard', function (req, res) {
   console.log(req.body);
   res.send("Here is your leaderboard");
 });
 
-// router.post('/commands/kudos', urlencodedParser, (req, res) =>{
-//   res.status(200).end() // best practice to respond with empty 200 status code
-//   const reqBody = req.body
-//   const responseURL = reqBody.response_url
-//   if (reqBody.token != YOUR_APP_VERIFICATION_TOKEN){
-//       res.status(403).end("Access forbidden")
-//   }else{
-//       const message = {
-//           "text": "This is your first interactive message",
-//           "attachments": [
-//               {
-//                   "text": "Building buttons is easy right?",
-//                   "fallback": "Shame... buttons aren't supported in this land",
-//                   "callback_id": "access",
-//                   "color": "#3AA3E3",
-//                   "attachment_type": "default",
-//                   "actions": [
-//                       {
-//                           "name": "yes",
-//                           "text": "yes",
-//                           "type": "button",
-//                           "value": "yes"
-//                       },
-//                       {
-//                           "name": "no",
-//                           "text": "no",
-//                           "type": "button",
-//                           "value": "no"
-//                       },
-//                       {
-//                           "name": "maybe",
-//                           "text": "maybe",
-//                           "type": "button",
-//                           "value": "maybe",
-//                           "style": "danger"
-//                       }
-//                   ]
-//               }
-//           ]
-//       }
-//       sendMessageToSlackResponseURL(responseURL, message)
-//   }
-// })
 
 
 router.post('/interactive/action', function (req, res) {
   const payload = JSON.parse(req.body.payload);
-  res.send("Here is your fcking response");
+  const sender_id = payload.user.id
+  console.log(payload);
+  //TODO: save to database
+  if (payload.callback_id === "accept") {
+    if (payload.actions[0].value === "yes") {
+
+    }
+    if (payload.actions[0].value === "no") {
+      res.send("you sucks")
+    }
+
+  }
+  // if (payload.actions[0])
+
 });
 
 

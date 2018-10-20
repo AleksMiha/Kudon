@@ -13,40 +13,65 @@ const db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 //mongoose.Promise = global.Promise;
+
 Employee.insertMany(
     [
         {
             name: {
-                first: 'Ivo',
-                last: 'Bosc'
+                first: 'Vid',
+                last: 'Zelen'
             },
-            slackUserId: 'kafje',
-            position: '5bcb2d2bc761be3e848bfb72',
-            managerId: '5bcb331fb29ebf33ecc5c4ec',
-            email: 'nejc@mail.com',
-            avatarUrl: '/public/images/nejc.jpg',
-            department: 'Backend',
+            slackUserId: 'zelenicaj',
+            position: '5bcb2d2bc761be3e848bfb73',
+            managerId: '5bcb483f895e7e31b49641c0',
+            email: 'vid@mail.com',
+            avatarUrl: '/public/images/vid.jpg',
+            department: 'Data science',
             active: true,
-            spentKudosThisWeek: 1,
+            spentKudosThisWeek: 4,
         },
         {
             name: {
-                first: 'Vili',
-                last: 'Resni'
+                first: 'Aljaž',
+                last: 'Kres'
             },
-            slackUserId: 'pineappletea',
-            position: '5bcb2d2bc761be3e848bfb72',
-            managerId: '5bcb331fb29ebf33ecc5c4ed',
-            email: 'vasilj@mail.com',
-            avatarUrl: '/public/images/vasilij.jpg',
+            slackUserId: 'malopolje',
+            position: '5bcb2d2bc761be3e848bfb73',
+            managerId: '5bcb4840895e7e31b49641c1',
+            email: 'aljaz@mail.com',
+            avatarUrl: '/public/images/aljaz.jpg',
             department: 'Frontend',
             active: true,
-            spentKudosThisWeek: 2,
+            spentKudosThisWeek: 1,
         },
     ]).then(data => console.log(data));
+//Employee.deleteMany({slackUserId: 'kubicnimeter'}).then(data => console.log(data));
+
+function validateActivity(id) {
+    return Employee.findOne({slackUserId: id})
+        .then(data => {
+            if (data.active === true) {
+                return true;
+            } else {
+                return false;
+            }
+        }).catch(err => console.log(err))
+}
+
+function createTransaction(transaction) {
+    //person giving and person recieving kudos is not the same person => true
+    const differentPerson = !(transaction.from === transaction.to);
+
+    //ensure both reciever and giver of kudos are an active part of the company
+    const giverActivePerson = validateActivity(transaction.from);
+    const recieverActivePerson = validateActivity(transaction.to);
 
 
-app.get('/', function(req, res){
+}
+
+
+
+app.get('/callme', function(req, res){
     res.send({});
 });
 
