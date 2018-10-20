@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {
-  WebClient
-} = require('@slack/client');
+const { WebClient, IncomingWebhook} = require('@slack/client');
 const secrets = require('../config/slack_secret');
 const bodyParser = require('body-parser')
 const urlencodedParser = bodyParser.urlencoded({
@@ -12,12 +10,31 @@ const axios = require('axios');
 const CLIENT_ID = secrets.CLIENT_ID;
 const CLIENT_SECRET = secrets.CLIENT_SECRET;
 const BOT_TOKEN = secrets.BOT_TOKEN;
+const WEBHOOK_URL = secrets.WEBHOOK_URL;
 
 const admin_aproval_MESSAGE = require('../messages/admin_aproval');
 const dialog_MESSAGE = require('../messages/dialog');
+const newTransaction = require('../test')
 
 
 const web = new WebClient(BOT_TOKEN);
+const webhook = new IncomingWebhook(WEBHOOK_URL);
+
+// function postRandomKudo(){
+  
+//   const content = `Random kudo:
+//   `
+//   webhook.send('Random kudo \n ', function(err, res) {
+//     if (err) {
+//         console.log('Error:', err);
+//     } else {
+//         console.log('Message sent: ', res);
+//     }
+// });
+// }
+
+// setInterval(postRandomKudo, 1000 * 60);
+
 /* GET users listing. */
 router.get('/oauth', function (req, res) {
   // When a user authorizes an app, a code query parameter is passed on the oAuth endpoint. If that code is not there, we respond with an error message
@@ -77,31 +94,6 @@ router.post('/event/kudos', (req, res, next) => {
 
 // });
 const dialog_url = "https://slack.com/api/dialog.open";
-const dialog = {
-  "callback_id": "kudos_prompt",
-  "title": "Send kudos",
-  "submit_label": "Request",
-  "elements": [{
-      "label": "Assignee",
-      "name": "bug_assignee",
-      "type": "select",
-      "data_source": "users"
-    },
-    {
-      "type": "text",
-      "label": "Amount of Kudos",
-      "name": "Amount"
-    },
-    {
-      "label": "Add comment",
-      "name": "comment",
-      "type": "textarea",
-      "hint": "Provide additional information if needed."
-    }
-
-  ]
-};
-
 // handle the post triggered by slash command using node express
 router.post('/commands/kudos', (req, res) => {
   console.log(req.body);
@@ -185,12 +177,46 @@ router.post('/interactive/action', function (req, res) {
   console.log(payload);
   //TODO: save to database
   if (payload.callback_id === "accept") {
-    if (payload.actions[0].value === "yes") {
+      const kudoGiverId = "4321";
+      const toUserSlackId = "1234"; //Need
+      const amount = "666";  //Need
+      const bossComment = "Let it be"; //Need
+      const bossName = "Mirko Novak"
+      const employeeComment = "You deserve it";
+      const toUserSlackName = "Luka Petelin";
+      const fromUserSlackName = "Mirko Car";
+      const reference = payload.actions[0].value.ref;
+
+    if (payload.actions[0].value.answer === "yes") {
       res.send("You nice person");
-      //change aproval database
+       //change aproval database
+       //Need toUserSlackId      
+       web.chat.postMessage({
+        channel: kudoGiverId,
+        text: `Your ${amount} kudos were successfully transfered to ${toUserSlackName},
+        his boss ${bossName} said: ${bossComment}. `
+      });
+       web.chat.postMessage({
+        channel: toUserSlackId,
+        text: `Your co-worker ${fromUserSlackName} is giving you ${amount} of Kudos.
+        He said: ${employeeComment}.
+        Your boss ${bossName} aproved it, his commment: ${bossComment}`
+      });
     }
-    if (payload.actions[0].value === "no") {
-      res.send("you sucks");
+    if (payload.actions[0].value.answer === "no") {
+        res.send("you sucks");
+        web.chat.postMessage({
+          channel: toUserSlackId,
+          text: `Your co-worker ˘${fromUserSlackName} sent you ${amount} of Kudos,
+          but your boss ${bossName}
+          rejected transaction due to: ${toUserSlackName}.`
+        });
+        web.chat.postMessage({
+         channel: kudoGiverId,
+         text: `You have sent ${amount} of kudos,
+         but his boss ${bossName} rejected transaction,
+         due to ${bossComment}`
+       });
       //change aproval database to refused
     } 
   }
@@ -202,11 +228,22 @@ router.post('/interactive/action', function (req, res) {
     const amount = Number(payload.submission.Amount);
     //add to database kudos sending
     
+    newTransaction({
+      message,
+      fromSlackId: fromUserId,
+      toSlackId: toUserId,
+      amount
+    }).then(data => {
+      console.log("data is data", data)
+    });
+
+    
     // const toUserName  retrievaš iz baze
     //TODO: 
     //get trade_id and pass it to the admin_aproval
     res.status(200).end();
     const upperChannelId = null //TODO: get upper channel slack
+    const transaction_id = "1234"; //TOTO: retrieve from database
     web.chat.postMessage({
       channel: payload.user.id,
       // ...admin_aproval_MESSAGE
@@ -223,13 +260,20 @@ router.post('/interactive/action', function (req, res) {
                     "name": "yes",
                     "text": "yes",
                     "type": "button",
-                    "value": "yes"
+                    "value": {
+                      "answer": "yes",
+                      "ref": `${transaction_id}`
+                    }
+
                 },
                 {
                     "name": "no",
                     "text": "no",
                     "type": "button",
-                    "value": "no"
+                    "value": {
+                      "answer": "no",
+                      "ref": `${transaction_id}`
+                    }
                 }
             ]
         }
@@ -238,6 +282,4 @@ router.post('/interactive/action', function (req, res) {
     .catch(console.error);
   }
 });
-
-
 module.exports = router;
