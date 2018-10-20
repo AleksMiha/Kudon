@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { WebClient } = require('@slack/client');
 const secrets = require('../config/slack_secret');
+const bodyParser = require('body-parser')
+const urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 const CLIENT_ID = secrets.CLIENT_ID;
 const CLIENT_SECRET = secrets.CLIENT_SECRET;
@@ -43,7 +45,11 @@ router.get('/oauth', function (req, res) {
 });
 
 router.post('/event/kudos', (req, res, next) => {
+  // res.send(req.body.challenge);
   if (req.body.event.type === "message") {
+    if (req.body.event.message.bot_id) {
+      res.sendStatus(200);
+    } else {
     if (req.body.event.text.includes("sup")) {
       ts = req.body.event.ts;
       console.log(req.body.event);
@@ -55,14 +61,45 @@ router.post('/event/kudos', (req, res, next) => {
         })
         .catch(console.error);
     }
-  } else {
-    res.sendStatus(200);
+  }
   }
 });
 
-router.post('/message_action', function (req, res) {
-  console.log(req.body);
-  res.send("You sent kudos");
+router.post('/commands/kudos', function (req, res) {
+  const channel_id = req.body.channel;
+  res.json({
+    "text": "This is your first interactive message",
+    "attachments": [
+        {
+            "text": "Building buttons is easy right?",
+            "fallback": "Shame... buttons aren't supported in this land",
+            "callback_id": "button_tutorial",
+            "color": "#3AA3E3",
+            "attachment_type": "default",
+            "actions": [
+                {
+                    "name": "yes",
+                    "text": "yes",
+                    "type": "button",
+                    "value": "yes"
+                },
+                {
+                    "name": "no",
+                    "text": "no",
+                    "type": "button",
+                    "value": "no"
+                },
+                {
+                    "name": "maybe",
+                    "text": "maybe",
+                    "type": "button",
+                    "value": "maybe",
+                    "style": "danger"
+                }
+            ]
+        }
+    ]
+})
 });
 
 router.post('/commands/leaderboard', function (req, res) {
@@ -70,45 +107,55 @@ router.post('/commands/leaderboard', function (req, res) {
   res.send("Here is your leaderboard");
 });
 
-// router.post('/commands/kudos', function (req, res) {
-//   console.log(req.body);
-//   res.json({
-//     text: "It is cool",
-//     attachments: [
-//       {
-//           text:"Partly cloudy today and tomorrow"
+// router.post('/commands/kudos', urlencodedParser, (req, res) =>{
+//   res.status(200).end() // best practice to respond with empty 200 status code
+//   const reqBody = req.body
+//   const responseURL = reqBody.response_url
+//   if (reqBody.token != YOUR_APP_VERIFICATION_TOKEN){
+//       res.status(403).end("Access forbidden")
+//   }else{
+//       const message = {
+//           "text": "This is your first interactive message",
+//           "attachments": [
+//               {
+//                   "text": "Building buttons is easy right?",
+//                   "fallback": "Shame... buttons aren't supported in this land",
+//                   "callback_id": "access",
+//                   "color": "#3AA3E3",
+//                   "attachment_type": "default",
+//                   "actions": [
+//                       {
+//                           "name": "yes",
+//                           "text": "yes",
+//                           "type": "button",
+//                           "value": "yes"
+//                       },
+//                       {
+//                           "name": "no",
+//                           "text": "no",
+//                           "type": "button",
+//                           "value": "no"
+//                       },
+//                       {
+//                           "name": "maybe",
+//                           "text": "maybe",
+//                           "type": "button",
+//                           "value": "maybe",
+//                           "style": "danger"
+//                       }
+//                   ]
+//               }
+//           ]
 //       }
-//   ]
-//   });
-// });
-//   web.chat.postMessage({
-//     channel: conversationId,
-//     text: 'Hello there',
-//     attachments: [
-//       {
-//         "fallback": "Required plain-text summary of the attachment.",
-//         "color": "#36a64f",
-//         "author_name": "Bobby Tables",
-//         "author_link": "http://flickr.com/bobby/",
-//         "author_icon": "http://flickr.com/icons/bobby.jpg",
-//         "title": "Slack API Documentation",
-//         "title_link": "https://api.slack.com/",
-//         "text": "Optional text that appears within the attachment",
-//         "fields": [
-//           {
-//             "title": "Priority",
-//             "value": "High",
-//             "short": false
-//           }
-//         ],
-//         "image_url": "http://my-website.com/path/to/image.jpg",
-//         "thumb_url": "http://example.com/path/to/thumb.png",
-//         "footer": "Slack API",
-//         "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png",
-//         "ts": 123456789
-//       }
-//     ]
-//   }).then(res => console.log(res))
-// });
+//       sendMessageToSlackResponseURL(responseURL, message)
+//   }
+// })
+
+
+router.post('/interactive/action', function (req, res) {
+  const payload = JSON.parse(req.body.payload);
+  res.send("Here is your fcking response");
+});
+
 
 module.exports = router;

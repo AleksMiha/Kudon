@@ -17,31 +17,31 @@ Employee.insertMany(
     [
         {
             name: {
-                first: 'Aleks',
-                last: 'Stepančič'
+                first: 'Ivo',
+                last: 'Bosc'
             },
-            slackUserId: 'kosinusdeset',
-            position: '5bcb2d2bc761be3e848bfb70',
-            managerId: '5bcb319083b2cd15c46e63e9',
-            email: 'aleks@mail.com',
-            avatarUrl: '/public/images/aleks.jpg',
-            department: 'HR',
+            slackUserId: 'kafje',
+            position: '5bcb2d2bc761be3e848bfb72',
+            managerId: '5bcb331fb29ebf33ecc5c4ec',
+            email: 'nejc@mail.com',
+            avatarUrl: '/public/images/nejc.jpg',
+            department: 'Backend',
             active: true,
             spentKudosThisWeek: 1,
         },
         {
             name: {
-                first: 'Anej',
-                last: 'Jerman'
+                first: 'Vili',
+                last: 'Resni'
             },
-            slackUserId: 'tangensdeset',
-            position: '5bcb2d2bc761be3e848bfb70',
-            managerId: '5bcb319083b2cd15c46e63e9',
-            email: 'anej@mail.com',
-            avatarUrl: '/public/images/anej.jpg',
-            department: 'Marketing',
+            slackUserId: 'pineappletea',
+            position: '5bcb2d2bc761be3e848bfb72',
+            managerId: '5bcb331fb29ebf33ecc5c4ed',
+            email: 'vasilj@mail.com',
+            avatarUrl: '/public/images/vasilij.jpg',
+            department: 'Frontend',
             active: true,
-            spentKudosThisWeek: 0,
+            spentKudosThisWeek: 2,
         },
     ]).then(data => console.log(data));
 
