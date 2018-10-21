@@ -13,6 +13,14 @@ const transactionSchema = new mongoose.Schema({
         ref: 'Employee',
         required: true
     },
+    manager: {
+        type: Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true
+    },
+    from_slackId: String,
+    to_slackId: String,
+    manager_slackId: String,
     message: String,
     amount: Number,
     weightRatio: Number,

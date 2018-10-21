@@ -21,7 +21,10 @@ const employeeSchema = new mongoose.Schema({
     avatarUrl: String,
     department: String,
     active: Boolean,
-    spentKudosThisWeek: Number,
+    givenKudos: {
+        type: Number,
+    },
+    spendKudos: Number,
     added: {
         type: Date,
         default: Date.now

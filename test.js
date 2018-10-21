@@ -50,24 +50,21 @@ function getRecievantSlackId(a_employeeId) {
 function getRecivantManagerSlackId(a_employeeId) {
     return new Promise((resolve, reject) => {
         console.log('before query!', a_employeeId);
-        Employee.findOne({_id: a_employeeId}).populate('managerId')
+        Employee.findOne({_id: a_employeeId})//.populate('managerId')
         .then(data => {
+            Employee.findOne({_id: data.managerId})
+            .then(values => {
+                resolve(values.slackUserId);
+            })
             //console.log('after query!', data);
             //console.log("Data reading at getRecievantSalckId", data.managerId.slackUserId);
-            resolve(data.managerId.slackUserId);
+            //resolve(data.managerId.slackUserId);
         })
         .catch(err => console.log(`Error at getRecivantManagerSlackId`, err));
     });
 }
 
-function applyManagerFeedback(a_managerComment, a_managerApproval, a_transactionId) {
-    Employee.findByIdAndUpdate(
-                                a_transactionId,
-                                {
-                                    managerComment: a_managerComment,
-                                    approved: a_managerApproval
-                                });
-}
+
 
 module.exports = function createTransaction(transaction) {
     /*
@@ -128,21 +125,3 @@ module.exports = function createTransaction(transaction) {
            })     
        })
 }
-
-
-
-
-/*
-createTransaction({
-    fromSlackId: 'zelenicaj',
-    toSlackId: 'skatlica',
-    message: 'Hello form the other side',
-    amount: 5
-});
-
-app.get('/callme', function(req, res){
-    res.send({});
-});
-
-app.listen(3000);
-console.log('Server running on port 3000');*/

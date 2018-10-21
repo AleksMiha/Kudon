@@ -4,6 +4,8 @@ const {
   WebClient,
   IncomingWebhook
 } = require('@slack/client');
+const Transaction = require('../models/Transaction');
+const Employee = require('../models/Employee');
 const secrets = require('../config/slack_secret');
 const bodyParser = require('body-parser')
 const urlencodedParser = bodyParser.urlencoded({
@@ -18,35 +20,63 @@ const WEBHOOK_URL = secrets.WEBHOOK_URL;
 const admin_aproval_MESSAGE = require('../messages/admin_aproval');
 const dialog_MESSAGE = require('../messages/dialog');
 const newTransaction = require('../test')
+const isKudosDialog = require('../messages/isKudosDialog');
 
 
 const web = new WebClient(BOT_TOKEN);
 const webhook = new IncomingWebhook(WEBHOOK_URL);
 
-function postRandomKudo() {
-  //retrieve from database
-  const clientSentFrom = "Aleks";
-  const clientSentTo = "Miha";
-  const comment = "Becasue you work hard";
-  const ammount = "666";
-  const _date = "21.10.2018";
-  const content = `Random kudo:
-  On ${_date}
-  User: ${clientSentFrom}
-  sent ${clientSentTo}
-   ${ammount} kudos
-  Comment: ${comment}
-  `
-  webhook.send(content, function (err, res) {
-    if (err) {
-      console.log('Error:', err);
-    } else {
-      console.log('Message sent: ', res);
-    }
-  });
+Transaction.count().exec(function (err, count) {
+  // Get a random entry
+  var random = Math.floor(Math.random() * count)
+  Transaction.findOne().skip(random).populate('from', 'slackUserId').populate('to', 'slackUserId').exec(
+    function (err, result) {
+      // Tada! random user
+      webhook.send(postRandomKudo(result.from.slackUserId, result.to.slackUserId, result.message, result.amount, result.added), function (err, res) {
+        if (err) {
+          console.log('Error:', err);
+        } else {
+          console.log('Message sent: ', res);
+        }
+      });
+      // console.log(result) 
+    })
+})
+
+function postRandomKudo(clientSentFrom, clientSentTo, comment, amount, _date) {
+  const content = {
+    "text": "Random Kudo",
+    "attachments": [{
+      "fallback": "Required plain-text summary of the attachment.",
+      "color": "#36a64f",
+      "pretext": "Optional text that appears above the attachment block",
+      "title": "From",
+      "text": `<@${clientSentFrom}>`,
+      "fields": [{
+          "title": "To",
+          "value": `<@${clientSentTo}>`,
+          "short": false
+        },
+        {
+          "title": "Amount",
+          "value": `${amount}`,
+          "short": false
+        },
+        {
+          "title": "Comment",
+          "value": `${comment}`,
+          "short": false
+        }
+      ],
+      "footer": "Slack API",
+      "ts": 123456789
+    }]
+  }
+  return content;
 }
 
-setInterval(postRandomKudo, 1000 * 60 * 5);
+
+setInterval(postRandomKudo, 1000 * 60 * 3);
 
 /* GET users listing. */
 router.get('/oauth', function (req, res) {
@@ -85,19 +115,21 @@ router.post('/event/kudos', (req, res, next) => {
 
   // res.send(req.body.challenge);
   if (req.body.event.type === "message") {
-    if (req.body.event.message._id) {
+    // console.log(req.body)
+    const rt = req.body.event.text;
+    // console.log(rt)
+    // console.log(rt.includes("ty"));
+    if (rt.includes("ty") || rt.includes("thanks") || rt.includes("hvala")) {
+      const conversationId = req.body.event.channel;
+      // console.log(isKudosDialog);
+      web.chat.postMessage({
+        channel: conversationId,
+        text: isKudosDialog.text,
+        attachments: isKudosDialog.attachments
+      });
       res.sendStatus(200);
     } else {
-      if (req.body.event.text.includes("sup")) {
-        console.log(req.body.event);
-        const conversationId = req.body.event.channel;
-        res.sendStatus(200);
-        web.chat.postMessage({
-            channel: conversationId,
-            text: `You just said something`
-          })
-          .catch(console.error);
-      }
+      res.sendStatus(200);
     }
   }
 });
@@ -109,10 +141,10 @@ router.post('/event/kudos', (req, res, next) => {
 const dialog_url = "https://slack.com/api/dialog.open";
 // handle the post triggered by slash command using node express
 router.post('/commands/kudos', (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
 
-  console.log('trigger id', req.body.trigger_id)
-  console.log('type of trigger id', typeof (req.body.trigger_id))
+  // console.log('trigger id', req.body.trigger_id)
+  // console.log('type of trigger id', typeof (req.body.trigger_id))
 
   // post dialog to dialog url
   axios.post(dialog_url, {
@@ -125,7 +157,7 @@ router.post('/commands/kudos', (req, res) => {
       'Authorization': `Bearer ${BOT_TOKEN}`
     }
   }).then(res => {
-    console.log(res.data);
+    // console.log(res.data);
   }).catch(err => console.log(err))
 });
 
@@ -138,112 +170,172 @@ router.post('/commands/leaderboard', function (req, res) {
 
 router.post('/interactive/action', function (req, res) {
   const payload = JSON.parse(req.body.payload);
-  const sender_id = payload.user.id
-  console.log(payload);
+  const sender_id = payload.user.id;
+  // console.log(payload);
+
+  if (payload.callback_id === "dialog") {
+    if (payload.actions[0].value === "yes") {
+      axios.post(dialog_url, {
+        dialog: dialog_MESSAGE,
+        trigger_id: payload.trigger_id
+      }, {
+        headers: {
+          'Content-type': 'application/json',
+          'charset': 'UTF-8',
+          'Authorization': `Bearer ${BOT_TOKEN}`
+        }
+      }).then(res => {
+        // console.log(res.data);
+      }).catch(err => console.log(err))
+    } else {
+      res.status(200).end();
+    }
+  }
   //TODO: save to database
   if (payload.callback_id === "accept") {
-      const kudoGiverId = "4321";
-      const toUserSlackId = "1234"; //Need
-      const amount = "666";  //Need
-      const bossComment = "Let it be"; //Need
-      const bossName = "Mirko Novak"
-      const employeeComment = "You deserve it";
-      const toUserSlackName = "Luka Petelin";
-      const fromUserSlackName = "Mirko Car";
-      const reference = payload.actions[0].value.ref;
+    console.log(payload);
 
-    if (payload.actions[0].value.answer === "yes") {
-      res.send("You nice person");
-       //change aproval database
-       //Need toUserSlackId      
-       web.chat.postMessage({
-        channel: kudoGiverId,
-        text: `Your ${amount} kudos were successfully transfered to ${toUserSlackName},
-        his boss ${bossName} said: ${bossComment}. `
-      });
-       web.chat.postMessage({
-        channel: toUserSlackId,
-        text: `Your co-worker ${fromUserSlackName} is giving you ${amount} of Kudos.
-        He said: ${employeeComment}.
-        Your boss ${bossName} aproved it, his commment: ${bossComment}`
-      });
-    }
-    if (payload.actions[0].value.answer === "no") {
-        res.send("you sucks");
+    const reference = payload.actions[0].value.split('_')[0];
+    console.log(reference);
+
+    if (payload.actions[0].value.split('_')[1] === "yes") {
+      res.status(200).end();
+      //change aproval database
+      //Need toUserSlackId     
+      Transaction.findById(reference).then(data => {
+        console.log("Transaction data", data);
+        // console.log("data: ", data)
         web.chat.postMessage({
-          channel: toUserSlackId,
-          text: `Your co-worker ˘${fromUserSlackName} sent you ${amount} of Kudos,
+          channel: data.from_slackId,
+          text: `Your ${data.amount} kudos were successfully transfered to <@${data.to_slackId}>,
+          his boss <@${data.manager_slackId}> oprove it. `
+        }).catch(err => console.log("there was an error with web.chat", err));
+        web.chat.postMessage({
+          channel: data.to_slackId,
+          text: `Your co-worker <@${data.from_slackId}> is giving you ${data.amount} of Kudos.
+          He said: ${data.messege}.
+          Your boss <@${data.manager_slackId} aprove it.`
+        }).catch(err => console.log("there was an error with web.chat", err));;
+      }).catch(err => console.log("error in answer action", err));
+    }
+    if (payload.actions[0].value.split("_")[1] === "no") {
+        Transaction.findById(reference).then(data => {
+          console.log("Transaction data", data);
+          // console.log("data: ", data)
+          web.chat.postMessage({
+            channel: data.from_slackId,
+            text: `Boss <@${data.manager_slackId}> is angry at you, 
+            so he does not want you to give ${data.amount} kudos
+            to <@${data.to_slackId}>.`
+          }).catch(err => console.log("there was an error with web.chat", err));
+          web.chat.postMessage({
+            channel: data.to_slackId,
+            text: `Your co-worker <@${data.from_slackId}> was offering you ${data.amount} of Kudos, 
+            But your boss <@${data.manager_slackId} sadly cancell the transaction.`
+          }).catch(err => console.log("there was an error with web.chat", err));;
+        }).catch(err => console.log("error in answer action", err));
+      res.send("you sucks");
+      web.chat.postMessage({
+        channel: toUserSlackId,
+        text: `Your co-worker ˘${fromUserSlackName} sent you ${amount} of Kudos,
           but your boss ${bossName}
           rejected transaction due to: ${toUserSlackName}.`
-        });
-        web.chat.postMessage({
-         channel: kudoGiverId,
-         text: `You have sent ${amount} of kudos,
+      });
+      web.chat.postMessage({
+        channel: kudoGiverId,
+        text: `You have sent ${amount} of kudos,
          but his boss ${bossName} rejected transaction,
          due to ${bossComment}`
-       });
+      });
       //change aproval database to refused
-    } 
+    }
   }
+
   if (payload.callback_id === "kudos_prompt") {
     const fromUserId = payload.user.id;
     const fromUserName = payload.user.name;
     const toUserId = payload.submission.toUser;
     const message = payload.submission.comment;
     const amount = Number(payload.submission.Amount);
-    //add to database kudos sending
-    
-    newTransaction({
-      message,
-      fromSlackId: fromUserId,
-      toSlackId: toUserId,
-      amount
-    }).then(data => {
-      const { senderSlackId, managerSlackId, recieverSlackId, amount, transactionId, message } = data;
-      console.log("data is data", data)
-      web.chat.postMessage({
-        channel: payload.user.id, 
-        // ...admin_aproval_MESSAGE
-        "text": `User <@${senderSlackId}>, \n Wants to send: ${amount} Kudos, \n To: <@${recieverSlackId}>,\n He is saying that: ${message}`,
-        "attachments": [
-          {
-              "text": "Building buttons is easy right?",
-              "fallback": "Shame... buttons aren't supported in this land",
-              "callback_id": "accept",
-              "color": "#3AA3E3",
-              "attachment_type": "default",
-              "actions": [
-                  {
-                      "name": "yes",
-                      "text": "yes",
-                      "type": "button",
-                      "value": {
-                        "answer": "yes",
-                        "ref": `${transaction_id}`
-                      }
-  
-                  },
-                  {
-                      "name": "no",
-                      "text": "no",
-                      "type": "button",
-                      "value": {
-                        "answer": "no",
-                        "ref": `${transaction_id}`
-                      }
-                  }
-              ]
-          }
-      ]   
-      })
-      .catch(console.error);
-    }).catch(err => console.log("there is an error"));
+    console.log("From userId", fromUserId);
+    console.log("To UserId", toUserId);
 
-    
-    // const toUserName  retrievaš iz baze
-    //TODO: 
-    //get trade_id and pass it to the admin_aproval
+
     res.status(200).end();
-  }
-});
+    Employee.findOne({
+      slackUserId: toUserId
+    }).populate('managerId').then((data) => {
+      console.log("data: ", data)
+      data.set({
+        kudos: data.kudos + amount
+      })
+      data.save().then(msg => console.log("msg", msg)).catch(err => console.log("error at save", msg));
+      Employee.updateOne({
+        slackUserId: fromUserId
+      }, {
+        kudos: data.kudos - amount
+      }).then(msg => console.log("update from", msg)).catch(err => console.error(err))
+      Employee.findOne({
+          slackUserId: fromUserId
+        })
+        .then(_msg => {
+          console.log("_msg", _msg);
+          Transaction.create({
+              from: _msg._id,
+              to: data._id,
+              message: message,
+              amount: amount,
+              manager: data.managerId._id,
+              from_slackId: fromUserId,
+              to_slackId: toUserId,
+              manager_slackId: data.managerId.slackUserId
+            })
+            .then(msg => {
+              console.log("msg2", msg);
+              web.chat.postMessage({
+                  channel: data.managerId.slackUserId,
+                  // ...admin_aproval_MESSAGE
+                  "text": `User <@${fromUserId}>, \n Wants to send: ${amount} Kudos, \n To: <@${toUserId}>,\n He is saying that: ${message}`,
+                  "attachments": [{
+                    "text": "Building buttons is easy right?",
+                    "fallback": "Shame... buttons aren't supported in this land",
+                    "callback_id": "accept",
+                    "color": "#3AA3E3",
+                    "attachment_type": "default",
+                    "actions": [{
+                        "name": "yes",
+                        "text": "yes",
+                        "type": "button",
+                        "value": `${msg._id}_yes`
+
+                      },
+                      {
+                        "name": "no",
+                        "text": "no",
+                        "type": "button",
+                        "value": `${msg._id}_no`
+                      }
+                    ]
+                  }]
+                }
+              )
+
+            })
+            .catch(err => console.error(err));
+        }).catch(err => console.log("error at create", err));
+    });
+
+
+  }});
+
+
+// const { senderSlackId, managerSlackId, recieverSlackId, amount, transactionId, message } = data;
+
+
+// const toUserName  retrievaš iz baze
+//TODO: 
+//get trade_id and pass it to the admin_aproval
+
+
+
 module.exports = router;
