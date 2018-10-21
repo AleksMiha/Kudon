@@ -15,7 +15,7 @@ const employeeSchema = new mongoose.Schema({
     },
     managerId: {
         type: Schema.Types.ObjectId,
-        ref: 'Employee'
+        ref: 'Employee' 
     },
     email: String,
     avatarUrl: String,

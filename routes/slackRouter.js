@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { WebClient, IncomingWebhook} = require('@slack/client');
+const {
+  WebClient,
+  IncomingWebhook
+} = require('@slack/client');
 const secrets = require('../config/slack_secret');
 const bodyParser = require('body-parser')
 const urlencodedParser = bodyParser.urlencoded({
@@ -20,20 +23,30 @@ const newTransaction = require('../test')
 const web = new WebClient(BOT_TOKEN);
 const webhook = new IncomingWebhook(WEBHOOK_URL);
 
-// function postRandomKudo(){
-  
-//   const content = `Random kudo:
-//   `
-//   webhook.send('Random kudo \n ', function(err, res) {
-//     if (err) {
-//         console.log('Error:', err);
-//     } else {
-//         console.log('Message sent: ', res);
-//     }
-// });
-// }
+function postRandomKudo() {
+  //retrieve from database
+  const clientSentFrom = "Aleks";
+  const clientSentTo = "Miha";
+  const comment = "Becasue you work hard";
+  const ammount = "666";
+  const _date = "21.10.2018";
+  const content = `Random kudo:
+  On ${_date}
+  User: ${clientSentFrom}
+  sent ${clientSentTo}
+   ${ammount} kudos
+  Comment: ${comment}
+  `
+  webhook.send(content, function (err, res) {
+    if (err) {
+      console.log('Error:', err);
+    } else {
+      console.log('Message sent: ', res);
+    }
+  });
+}
 
-// setInterval(postRandomKudo, 1000 * 60);
+setInterval(postRandomKudo, 1000 * 60 * 5);
 
 /* GET users listing. */
 router.get('/oauth', function (req, res) {
@@ -69,13 +82,13 @@ router.get('/oauth', function (req, res) {
 });
 
 router.post('/event/kudos', (req, res, next) => {
+
   // res.send(req.body.challenge);
   if (req.body.event.type === "message") {
     if (req.body.event.message._id) {
       res.sendStatus(200);
     } else {
       if (req.body.event.text.includes("sup")) {
-        ts = req.body.event.ts;
         console.log(req.body.event);
         const conversationId = req.body.event.channel;
         res.sendStatus(200);
@@ -115,54 +128,6 @@ router.post('/commands/kudos', (req, res) => {
     console.log(res.data);
   }).catch(err => console.log(err))
 });
-// res.json({
-//     "trigger_id": "13345224609.738474920.8088930838d88f008e0",
-//     "dialog": {
-//       "callback_id": "ryde-46e2b0",
-//       "title": "Request a Ride",
-//       "submit_label": "Request",
-//       "notify_on_cancel": true,
-//       "state": "Limo",
-//       "elements": [
-//           {
-//               "type": "text",
-//               "label": "Pickup Location",
-//               "name": "loc_origin"
-//           },
-//           {
-//               "type": "text",
-//               "label": "Dropoff Location",
-//               "name": "loc_destination"
-//           }
-//       ]
-//     }
-//   })
-// {
-//     "text": "This is your first interactive message",
-//     "attachments": [
-//         {
-//             "text": "Building buttons is easy right?",
-//             "fallback": "Shame... buttons aren't supported in this land",
-//             "callback_id": "accept",
-//             "color": "#3AA3E3",
-//             "attachment_type": "default",
-//             "actions": [
-//                 {
-//                     "name": "yes",
-//                     "text": "yes",
-//                     "type": "button",
-//                     "value": "yes"
-//                 },
-//                 {
-//                     "name": "no",
-//                     "text": "no",
-//                     "type": "button",
-//                     "value": "no"
-//                 }
-//             ]
-//         }
-//     ]
-// })
 
 router.post('/commands/leaderboard', function (req, res) {
   console.log(req.body);
@@ -234,52 +199,51 @@ router.post('/interactive/action', function (req, res) {
       toSlackId: toUserId,
       amount
     }).then(data => {
+      const { senderSlackId, managerSlackId, recieverSlackId, amount, transactionId, message } = data;
       console.log("data is data", data)
-    });
+      web.chat.postMessage({
+        channel: payload.user.id, 
+        // ...admin_aproval_MESSAGE
+        "text": `User <@${senderSlackId}>, \n Wants to send: ${amount} Kudos, \n To: <@${recieverSlackId}>,\n He is saying that: ${message}`,
+        "attachments": [
+          {
+              "text": "Building buttons is easy right?",
+              "fallback": "Shame... buttons aren't supported in this land",
+              "callback_id": "accept",
+              "color": "#3AA3E3",
+              "attachment_type": "default",
+              "actions": [
+                  {
+                      "name": "yes",
+                      "text": "yes",
+                      "type": "button",
+                      "value": {
+                        "answer": "yes",
+                        "ref": `${transaction_id}`
+                      }
+  
+                  },
+                  {
+                      "name": "no",
+                      "text": "no",
+                      "type": "button",
+                      "value": {
+                        "answer": "no",
+                        "ref": `${transaction_id}`
+                      }
+                  }
+              ]
+          }
+      ]   
+      })
+      .catch(console.error);
+    }).catch(err => console.log("there is an error"));
 
     
     // const toUserName  retrievaš iz baze
     //TODO: 
     //get trade_id and pass it to the admin_aproval
     res.status(200).end();
-    const upperChannelId = null //TODO: get upper channel slack
-    const transaction_id = "1234"; //TOTO: retrieve from database
-    web.chat.postMessage({
-      channel: payload.user.id,
-      // ...admin_aproval_MESSAGE
-      "text": `User ${fromUserName}, \n Wants to send: ${amount} Kudos, \n To: ${toUserId},\n He is saying that: ${message}`,
-      "attachments": [
-        {
-            "text": "Building buttons is easy right?",
-            "fallback": "Shame... buttons aren't supported in this land",
-            "callback_id": "accept",
-            "color": "#3AA3E3",
-            "attachment_type": "default",
-            "actions": [
-                {
-                    "name": "yes",
-                    "text": "yes",
-                    "type": "button",
-                    "value": {
-                      "answer": "yes",
-                      "ref": `${transaction_id}`
-                    }
-
-                },
-                {
-                    "name": "no",
-                    "text": "no",
-                    "type": "button",
-                    "value": {
-                      "answer": "no",
-                      "ref": `${transaction_id}`
-                    }
-                }
-            ]
-        }
-    ]   
-    })
-    .catch(console.error);
   }
 });
 module.exports = router;

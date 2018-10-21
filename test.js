@@ -30,9 +30,9 @@ function getWeight(a_employeeId) {
     })
 }
 
-function getEmployeeIdFromSlackId(a_slackId) {
+function getEmployeeInfoFromSlackId(a_slackId) {
     return new Promise((resolve, reject) => {
-        Employee.findOne({slackUserId: a_slackId})
+        Employee.findOne({slackUserId: a_slackId})  
         .then(data => resolve(data._id))
         .catch(err => console.log(`Error at getEmployeeIdFromSlackId`, err));
     });
@@ -41,10 +41,7 @@ function getEmployeeIdFromSlackId(a_slackId) {
 function getRecievantSlackId(a_employeeId) {
     return new Promise((resolve, reject) => {
         Employee.findById(a_employeeId)
-        .then(data => {
-            console.log("Data reading at getRecievantSalckId", data);
-            resolve(data.slackUserId)
-        })
+        .then(data => resolve(data.slackUserId))
         .catch(err => console.log(`Error at getRecivantSlackId`, err));
     });
 }   
@@ -52,104 +49,74 @@ function getRecievantSlackId(a_employeeId) {
 
 function getRecivantManagerSlackId(a_employeeId) {
     return new Promise((resolve, reject) => {
-        Employee.findById(a_employeeId).populate('managerId')
-        .then(data => resolve(data.managerId.slackUserId))
+        console.log('before query!', a_employeeId);
+        Employee.findOne({_id: a_employeeId}).populate('managerId')
+        .then(data => {
+            //console.log('after query!', data);
+            //console.log("Data reading at getRecievantSalckId", data.managerId.slackUserId);
+            resolve(data.managerId.slackUserId);
+        })
         .catch(err => console.log(`Error at getRecivantManagerSlackId`, err));
     });
 }
 
+function applyManagerFeedback(a_managerComment, a_managerApproval, a_transactionId) {
+    Employee.findByIdAndUpdate(
+                                a_transactionId,
+                                {
+                                    managerComment: a_managerComment,
+                                    approved: a_managerApproval
+                                });
+}
+
 module.exports = function createTransaction(transaction) {
     /*
-    //from slack we get sender's slackId and reciever's slackId; we need both '_id's
-     new Promise.all([
-        getEmployeeIdFromSlackId(transaction.fromSlackId), 
-        getEmployeeIdFromSlackId(transaction.toSlackId)
-    ])
-        .then(data => {
-            resolve({
-                fromEmployee: data[0], 
-                toEmployee: data[1]
-            });
-        })
-        .catch(err => console.log(`Error at employeeIds`, err));
-        
-    const fromEmployee = employeeIds.fromEmployee;
-    const toEmployee = employeeIds.toEmployee;
-    
     //person giving and person recieving kudos is not the same person => true
-    const differentPerson = !(employeeIds.fromEmployee === employeeIds.toEmployee);
-
+    
     //ensure both reciever and giver of kudos are an active part of the company
     //get weight ratio which is defined as position.weight of (from / to)
-    let promiseData = new Promise.all([
-        validateActivity(fromEmployee), 
-        validateActivity(toEmployee),
-        getWeight(fromEmployee),
-        getWeight(toEmployee)
-    ])
-        .then(data => {
-            resolve({
-                giverActivePerson: data[0], 
-                recieverActivePerson: data[1],
-                weightRationFrom: data[2],
-                weightRationTo: data[3]
-            });
-        })
-        .catch(err => console.log(`Error at promiseData`, err));
-    /*const giverActivePerson = await validateActivity(fromEmployee);
-    const recieverActivePerson = await validateActivity(toEmployee);
     
-    const weightRationFrom = await getWeight(fromEmployee);
-    const weightRationTo = await getWeight(toEmployee);*/
-        /*
+    const differentPerson = !(employeeIds.fromEmployee === employeeIds.toEmployee);
     const kudoIsValid = (differentPerson && promiseData.giverActivePerson && promiseData.recieverActivePerson);
 
-    const weightRatio = promiseData.weightRationFrom / promiseData.weightRationTo;
-
-    //console.log(giverActivePerson, recieverActivePerson, weightRatio);
-
-    const newTransaction = {
-        from: employeeIds.fromEmployee,
-        to: employeeIds.toEmployee,
-        message: transaction.message,
-        amount: transaction.amount,
-        weightRatio: weightRatio,
-        approved: false
-    };*/
+    */
 
     return new Promise((resolve, reject) => {
-        console.log('Pre promise 1');
+        //console.log('Pre promise 1');
         Promise.all([
-            getEmployeeIdFromSlackId(transaction.fromSlackId),  //get from _id
-            getEmployeeIdFromSlackId(transaction.toSlackId)     //get to _id
+            getEmployeeInfoFromSlackId(transaction.fromSlackId),  //get from _id
+            getEmployeeInfoFromSlackId(transaction.toSlackId)     //get to _id
         ]).then((dataFirst) => {
-            console.log('Pre promise 2');
+            //console.log('Pre promise 2');
             Promise.all([
                 validateActivity(dataFirst[0]), //from _id
                 validateActivity(dataFirst[1]), //to _id
                 getWeight(dataFirst[0]),        //from _id
                 getWeight(dataFirst[1])         //to _id
             ]).then((dataSecond) => {
-                console.log('Pre database insertion');
-                
-                Transaction.create({
+                    Transaction.create({
                     from: dataFirst[0],         //from _id
                     to: dataFirst[1],           //to _id
                     message: transaction.message,
                     amount: transaction.amount,
                     weightRatio: (dataSecond[2] / dataSecond[3]),
-                    approved: false
+                    approved: null
                 })
                 .then(dataThird => {
-                    console.log('Pre promise 3');
-                    console.log("Data reading at Pre promise 3", dataThird);
+                    //console.log('Pre promise 3', dataThird.to);
                     Promise.all([getRecievantSlackId(dataThird.to), getRecivantManagerSlackId(dataThird.to)])
                     .then(values => {
                         console.log(values);
-                        console.log('Before retriveing data', values[0], values[1]);
                         resolve({
+                            /*
                             recivantId: values[0], 
-                            managerId: values[1]
+                            managerId: values[1],*/
+                            senderSlackId: transaction.fromSlackId,
+                            managerSlackId: values[1],
+                            recieverSlackId: values[0],
+                            amount: transaction.amount,
+                            transactionId: dataThird._id,
+                            message: transaction.message
                         });
                     })
                 })

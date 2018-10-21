@@ -17,6 +17,7 @@ const transactionSchema = new mongoose.Schema({
     amount: Number,
     weightRatio: Number,
     approved: Boolean,
+    managerComment: String,
     added: {
         type: Date,
         default: Date.now
