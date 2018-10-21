@@ -163,8 +163,16 @@ router.post('/commands/kudos', (req, res) => {
 
 router.post('/commands/leaderboard', function (req, res) {
   console.log(req.body);
-  res.send("Here is your leaderboard");
-});
+  res.send("Here is your leader board");
+  let employees = "" ; 
+
+  Emoloyee.find({}).sort({givenKudos: 1}).exec((err, msg) => {
+    console.log(msg);
+  });
+
+    res.send(userMap);  
+  });
+
 
 
 
@@ -203,7 +211,15 @@ router.post('/interactive/action', function (req, res) {
       //change aproval database
       //Need toUserSlackId     
       Transaction.findById(reference).then(data => {
-        console.log("Transaction data", data);
+        Employee.findById(data.to).then(msg => {
+          msg.set({givenKudos: data.amount + msg.givenKudos});
+          msg.save();
+        });
+        Employee.findById(data.from).then(msg => {
+          msg.set({spentKudos: msg.givenKudos - data.amount});
+          msg.save();
+        });
+
         // console.log("data: ", data)
         web.chat.postMessage({
           channel: data.from_slackId,
@@ -231,7 +247,7 @@ router.post('/interactive/action', function (req, res) {
           web.chat.postMessage({
             channel: data.to_slackId,
             text: `Your co-worker <@${data.from_slackId}> was offering you ${data.amount} of Kudos, 
-            But your boss <@${data.manager_slackId} sadly cancell the transaction.`
+            But your boss <@${data.manager_slackId}> sadly cancell the transaction.`
           }).catch(err => console.log("there was an error with web.chat", err));;
         }).catch(err => console.log("error in answer action", err));
       res.send("you sucks");
@@ -265,11 +281,7 @@ router.post('/interactive/action', function (req, res) {
     Employee.findOne({
       slackUserId: toUserId
     }).populate('managerId').then((data) => {
-      console.log("data: ", data)
-      data.set({
-        kudos: data.kudos + amount
-      })
-      data.save().then(msg => console.log("msg", msg)).catch(err => console.log("error at save", msg));
+      console.log("data: ", data);
       Employee.updateOne({
         slackUserId: fromUserId
       }, {

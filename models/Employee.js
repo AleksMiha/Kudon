@@ -24,7 +24,7 @@ const employeeSchema = new mongoose.Schema({
     givenKudos: {
         type: Number,
     },
-    spendKudos: Number,
+    spentKudos: Number,
     added: {
         type: Date,
         default: Date.now
